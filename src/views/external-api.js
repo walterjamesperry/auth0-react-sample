@@ -1,9 +1,43 @@
 import React, { useState } from "react";
 import { Button, ButtonGroup, Container } from "react-bootstrap";
-import Highlight from "../components/highlight";
+import { Highlight } from "../components";
+import { useAuth0 } from "@auth0/auth0-react";
 
-const ExternalApi = () => {
+export const ExternalApi = () => {
   const [message, setMessage] = useState("");
+  const apiUrl = process.env.REACT_APP_API_URL;
+
+  const { getAccessTokenSilently } = useAuth0();
+
+  const callApi = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/public-message`);
+
+      const responseData = await response.json();
+
+      setMessage(responseData);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const callSecureApi = async () => {
+    try {
+      const token = await getAccessTokenSilently();
+
+      const response = await fetch(`${apiUrl}/api/private-message`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const responseData = await response.json();
+
+      setMessage(responseData);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
 
   return (
     <Container className="mb-5">
@@ -14,10 +48,10 @@ const ExternalApi = () => {
         <strong>This route should be private</strong>.
       </p>
       <ButtonGroup>
-        <Button color="primary" className="mt-5">
+        <Button onClick={callApi} color="primary" className="mt-5">
           Get Public Message
         </Button>
-        <Button color="primary" className="mt-5">
+        <Button onClick={callSecureApi} color="primary" className="mt-5">
           Get Private Message
         </Button>
       </ButtonGroup>
@@ -25,9 +59,7 @@ const ExternalApi = () => {
       {message && (
         <div className="mt-5">
           <h6 className="muted">Result</h6>
-          <Highlight language="json">
-            {JSON.stringify(message, null, 2)}
-          </Highlight>
+          <Highlight>{JSON.stringify(message, null, 2)}</Highlight>
         </div>
       )}
     </Container>
